@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
+#include "wrap.h"
+
 #define PORT 9600
 #define BUF_SIZE 128
 #define SERVER_BACKLOG 10
@@ -15,6 +17,7 @@
 void *handle_conn(void *arg) {
 	int conn_fd = *((int*) arg);
 
+	//READ
 	char buf[BUF_SIZE];
 	ssize_t n;
 	while (1) {
@@ -31,6 +34,13 @@ void *handle_conn(void *arg) {
 		printf("Received [%d]: %s\n", conn_fd,  buf);
 	}
 
+	//WRITE	
+	//set buf as message (this is a hack, do it right when prototype works)
+	snprintf(buf, sizeof(buf), "msg rcvd");	
+	
+	Write(conn_fd, buf, strlen(buf));
+
+	//CLOSE CONNECTION
 	printf("Closing connection [%d]\n",conn_fd);
 	int err = close(conn_fd);
 	if (err != 0) {
@@ -40,12 +50,14 @@ void *handle_conn(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
+	//CREATE SOCKET
 	int server_fd = socket(PF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0) {
 		fprintf(stderr, "Cannot create socket\n");
 		return 1;
 	}
 
+	//SET sockaddr_in VALUES
 	struct sockaddr_in server_addr;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(PORT);
@@ -54,13 +66,15 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Cannot parse IP address\n");
 		return 1;
 	}
-
+	
+	//BIND
 	int err = bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
 	if (err != 0) {
 		fprintf(stderr, "Cannot bind server\n");
 		return 1;
 	}
 
+	//LISTEN
 	err = listen(server_fd, SERVER_BACKLOG);
 	if (err != 0) {
 		fprintf(stderr, "Cannot listen\n");
@@ -69,6 +83,8 @@ int main(int argc, char *argv[]) {
 
 	printf("Server listening on port %d\n", PORT);
 
+
+	//ACCEPT
 	int client_fd;
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len;
@@ -81,11 +97,16 @@ int main(int argc, char *argv[]) {
 		}
 
 		printf("New client [%d]\n", client_fd);
+		
+		handle_conn(&client_fd);
 
+		/*
+		//create new thread for each client (up to a limit i assume??)
 		err = pthread_create(&thread, NULL, &handle_conn, (void*) &client_fd);
 		if (err != 0) {
 			fprintf(stderr, "Cannot create thread to handle client connection\n");
 			return 1;
 		}
+		*/
 	}
 }
