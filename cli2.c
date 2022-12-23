@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -14,7 +15,7 @@
 
 
 int main(int argc, char *argv[]){	
-	int					sockfd, n;
+	int					sockfd, n, err;
 	char				recvline[MAXLINE + 1], buff[MAXLINE];
 	struct sockaddr_in	servaddr;
 
@@ -26,23 +27,31 @@ int main(int argc, char *argv[]){
 	puts("socket()");
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
+	if (sockfd < 0){
+		perror("socket error");
+	}
+
 	//set values
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port   = htons(13);	/* daytime server */
+	servaddr.sin_port   = htons(PORT);	/* daytime server */
 	if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0)
 		fprintf(stderr, "inet_pton error for %s", argv[1]);
 
 	//CONNECT
 	puts("connect");
-	if (connect(sockfd, (SA *) &servaddr, sizeof(servaddr)) < 0)
-		puts("connect error");
+	if (connect(sockfd, (SA *) &servaddr, sizeof(servaddr)) < 0){
+		perror("connect error");
+		return 1;
+	}
 
 	for(;;){
 		//WRITE
-		puts("write...");
-		snprintf(buff, sizeof(buff), "hello, world");
-		write(sockfd, buff, strlen(buff));
+		puts("writing...");
+		snprintf(buff, sizeof(buff), "hello, world\r\n");
+		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
+			perror("write error");
+
 
 		//READ
 		puts("reading...");

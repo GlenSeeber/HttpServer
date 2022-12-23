@@ -1,0 +1,23 @@
+What's going wrong:
+
+	- Client is having a connection error.
+
+Likely causes:
+
+	- input IP address is wrong (as in, the server does not exist there)
+
+	- something was mistyped in the connect line
+
+	- something is wrong with the servaddr values
+
+Other notes:
+
+	- your errors do nothing to stop the program from continuing. this
+		will make debugging somewhat harder if you miss an error output.
+
+
+IMPORTANT UPDATE:
+
+	- looks like the error is saying that "Connection Refused" (ECONNREFUSED) 
+		which the man page for connect(2) says is because the client "found
+		no one listening on the remote address".

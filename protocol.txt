@@ -1,0 +1,24 @@
+Messages will be of uncertain length.
+
+This protocol will be based off of HTTP, might be exactly,
+but I don't know enough about it to say for sure:
+
+	- First, send the length of your message in hexidecimal, appended with "\r\n".
+
+	- Then, send your chunk, also appended with "\r\n".
+
+
+
+We will operate on client-driven query-response system:
+
+	- In all connections, the client sends the first message.
+
+	- The server will interpret the message, and send a response.
+
+	- The server will not send unprompted messages.
+
+	- The server will send exactly 1 message response to each query made by
+		the client. In cases where the query isn't interpretable, the server
+		will send back an error response.
+	
+	- Both the client and server could close the connection based on context.
