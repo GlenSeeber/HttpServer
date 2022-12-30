@@ -1,20 +1,15 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <stdlib.h>		//strtol()
+#include <unistd.h>		//read()
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/socket.h>	//socket()
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <pthread.h>
+#include <pthread.h>	//threads
 
-#define SA 		struct sockaddr
-#define PORT 	13
-#define MAXLINE	4096
-#define LISTENQ	1024
-
-#define HEADER 64
+#include "utility.h"
 
 int main(int argc, char *argv[]){
 	int					listenfd, connfd, n, recvLen;
@@ -65,7 +60,9 @@ int main(int argc, char *argv[]){
 			//READ
 			puts("reading message....\n");
 
+			readHeaderMsg(connfd, request);	//parse through header, then read msg body, saving it to request
 
+			/*			
 			//read just the header of the message
 			n = 0;
 			//only read until you have read all the bytes in the header
@@ -86,32 +83,26 @@ int main(int argc, char *argv[]){
 				printf("n: [%d]\n", n);
 				recvline[n] = 0;	// null terminate
 				//print to console
-				/*if (fputs(recvline, stdout) == EOF)
+				/ *if (fputs(recvline, stdout) == EOF)
 					perror("fputs error");
-				*/
+				* /
 				//print to char request[]
 				if(sprintf(request, "%s", recvline) < 0)	//using sprintf (not snprintf) creates a potential vulnerability.
 					perror("sprintf error");
 				
-			} 
+			} */
 			printf("client: [%s]\n", request);	//print the message
 	
 			//WRITE
 			puts("sending response....");
 
 			char msg[] = "your message was recieved\r\n";
-			int32_t msgLen = strlen(msg);
-			char myHeader[HEADER];
-
-			//i is number of chars printed
-			int i = sprintf(myHeader, "%d", msgLen);
+			printf("sizeof(msg): %lu", sizeof(msg));
+			//creates a header from msg. puts header and msg together onto buff
+			makeHeader(buff, msg);
 			
-			//append tabs to pad the header			
-			for ( ; i < HEADER; ++i){
-				myHeader[i] = '\t';
-			}
-			//set buff as the header (myHeader) plus the actual message (msg)
-			snprintf(buff, sizeof(buff), "%s%s", myHeader, msg);
+			printf("buff: [%s]\n", buff);
+
 			if(write(connfd, buff, strlen(buff)) != strlen(buff))
 				perror("write error");
 

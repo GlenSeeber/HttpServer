@@ -8,17 +8,11 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#define SA 		struct sockaddr
-#define PORT 	13
-#define MAXLINE	4096
-#define LISTENQ	1024
-
-#define HEADER 64
-
+#include "utility.h"
 
 int main(int argc, char *argv[]){	
 	int					sockfd, n, err;
-	char				recvline[MAXLINE + 1], buff[MAXLINE];
+	char				reply[MAXLINE+1], recvline[MAXLINE + 1], buff[MAXLINE];
 	struct sockaddr_in	servaddr;
 
 	if (argc != 2)
@@ -51,31 +45,30 @@ int main(int argc, char *argv[]){
 		//WRITE
 		puts("send a message to the server\n> ");
 		char msg[MAXLINE];
-		scanf("%s", &msg);		
-		int32_t msgLen = strlen(msg);
-		char myHeader[HEADER];
-		//i is the number of chars printed
-		int i = sprintf(myHeader, "%d", msgLen);
-		
-		for ( ; i < HEADER; ++i){
-			myHeader[i] = '\t';
-		}	
-		snprintf(buff, sizeof(buff), "%s%s", myHeader, msg);
+		scanf("%s", &msg);
+
+		makeHeader(buff, msg);
+
 		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
 			perror("write error");
 
 
 		//READ
 		puts("reading...");
+		
+		readHeaderMsg(sockfd, reply);
+
+		printf("server: [%s]\n", reply);	//print the message
+
+		/*
 		while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
 			fputs("loop to read from server....\n", stdout);
-			recvline[n] = 0;	/* null terminate */
+			recvline[n] = 0;	// null terminate
 			if (fputs(recvline, stdout) == EOF)
 				fputs("fputs error", stderr);
-		}	
+		}*/	
 		//logicgate determine if break
 		if(1){
-			puts("this should happen");
 			break;
 		}
 	}
