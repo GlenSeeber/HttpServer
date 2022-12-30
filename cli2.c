@@ -43,22 +43,27 @@ int main(int argc, char *argv[]){
 
 	for(;;){
 		//WRITE
-		puts("send a message to the server\n> ");
+		printf("[CLIENT] > ");
 		char msg[MAXLINE];
-		scanf("%s", &msg);
-
+		char c;
+		//this just records stdin to msg[] until you hit enter
+		for(int i = 0; (c = getchar()) != '\n'; ++i){
+			msg[i] = c;
+		}
+		
+		//puts header then msg[] onto buff[]
 		makeHeader(buff, msg);
 
+		//write to server
 		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
 			perror("write error");
 
 
 		//READ
-		puts("reading...");
-		
+		//parse through header and read the message from server
 		readHeaderMsg(sockfd, reply);
 
-		printf("server: [%s]\n", reply);	//print the message
+		printf("[SERVER] > %s\n", reply);	//print the message
 
 		/*
 		while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
@@ -67,8 +72,9 @@ int main(int argc, char *argv[]){
 			if (fputs(recvline, stdout) == EOF)
 				fputs("fputs error", stderr);
 		}*/	
+
 		//logicgate determine if break
-		if(1){
+		if(0){
 			break;
 		}
 	}

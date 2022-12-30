@@ -60,8 +60,10 @@ int main(int argc, char *argv[]){
 			//READ
 			puts("reading message....\n");
 
-			readHeaderMsg(connfd, request);	//parse through header, then read msg body, saving it to request
-
+			if (readHeaderMsg(connfd, request) < 0){	//parse through header, then read msg body, saving it to request
+				fprintf(stderr, "header conversion error\n");
+				break;
+			}
 			/*			
 			//read just the header of the message
 			n = 0;
@@ -91,23 +93,21 @@ int main(int argc, char *argv[]){
 					perror("sprintf error");
 				
 			} */
-			printf("client: [%s]\n", request);	//print the message
+			printf("[CLIENT] \"%s\"\n", request);	//print the message
 	
 			//WRITE
-			puts("sending response....");
-
-			char msg[] = "your message was recieved\r\n";
-			printf("sizeof(msg): %lu", sizeof(msg));
+			char msg[] = "your message was recieved";
+			
 			//creates a header from msg. puts header and msg together onto buff
 			makeHeader(buff, msg);
 			
-			printf("buff: [%s]\n", buff);
+			printf("[SERVER] \"%s\"\n", msg);
 
 			if(write(connfd, buff, strlen(buff)) != strlen(buff))
 				perror("write error");
 
 			//logic gate determines if we break the loop (leading to close()) or not
-			if(request == "q"){
+			if(request == "q" || 0){
 				puts("break");
 				break;
 			}
