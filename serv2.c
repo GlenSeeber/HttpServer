@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -13,10 +14,13 @@
 #define MAXLINE	4096
 #define LISTENQ	1024
 
+#define HEADER 64
+
 int main(int argc, char *argv[]){
-	int					listenfd, connfd, n;
+	int					listenfd, connfd, n, recvLen;
 	struct sockaddr_in	servaddr;
-	char				recvline[MAXLINE+1], request[MAXLINE+1], buff[MAXLINE];
+	char				recvline[MAXLINE+1], c_recvLen[HEADER], request[MAXLINE+1], buff[MAXLINE];
+	long int			l_recvLen;
 	
 	//CREATE SOCKET
 	puts("create socket");
@@ -60,25 +64,59 @@ int main(int argc, char *argv[]){
 		for(;;){
 			//READ
 			puts("reading message....\n");
-			while( (n = read(connfd, recvline, MAXLINE)) > 0) {
+
+
+			//read just the header of the message
+			n = 0;
+			//only read until you have read all the bytes in the header
+			while(n < HEADER) {
+				//add the amount of bits read to n
+ 				n += read(connfd, c_recvLen, HEADER-n);
+				
+				char *ptr;
+				l_recvLen = strtol(c_recvLen, &ptr, 10);
+				recvLen = (int) l_recvLen;	//recvLen is the amount of bytes in the actual message
+			}
+			//read only recvLen bytes (which was sent to us in the header)
+			n = 0;
+			while(n < recvLen) {
+				//add the amount of bits read to n
+				n += read(connfd, recvline, recvLen-n);
+				
+				printf("n: [%d]\n", n);
 				recvline[n] = 0;	// null terminate
 				//print to console
-				if (fputs(recvline, stdout) == EOF)
+				/*if (fputs(recvline, stdout) == EOF)
 					perror("fputs error");
+				*/
 				//print to char request[]
 				if(sprintf(request, "%s", recvline) < 0)	//using sprintf (not snprintf) creates a potential vulnerability.
 					perror("sprintf error");
 				
 			} 
-			fputs("\n", stdout);	//newline
-
+			printf("client: [%s]\n", request);	//print the message
+	
 			//WRITE
 			puts("sending response....");
-			snprintf(buff, sizeof(buff), "msg recieved\r\n");
-			write(connfd, buff, strlen(buff));
+
+			char msg[] = "your message was recieved\r\n";
+			int32_t msgLen = strlen(msg);
+			char myHeader[HEADER];
+
+			//i is number of chars printed
+			int i = sprintf(myHeader, "%d", msgLen);
+			
+			//append tabs to pad the header			
+			for ( ; i < HEADER; ++i){
+				myHeader[i] = '\t';
+			}
+			//set buff as the header (myHeader) plus the actual message (msg)
+			snprintf(buff, sizeof(buff), "%s%s", myHeader, msg);
+			if(write(connfd, buff, strlen(buff)) != strlen(buff))
+				perror("write error");
 
 			//logic gate determines if we break the loop (leading to close()) or not
-			if(1){
+			if(request == "q"){
 				puts("break");
 				break;
 			}

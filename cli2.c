@@ -13,6 +13,8 @@
 #define MAXLINE	4096
 #define LISTENQ	1024
 
+#define HEADER 64
+
 
 int main(int argc, char *argv[]){	
 	int					sockfd, n, err;
@@ -47,8 +49,18 @@ int main(int argc, char *argv[]){
 
 	for(;;){
 		//WRITE
-		puts("writing...");
-		snprintf(buff, sizeof(buff), "hello, world\r\n");
+		puts("send a message to the server\n> ");
+		char msg[MAXLINE];
+		scanf("%s", &msg);		
+		int32_t msgLen = strlen(msg);
+		char myHeader[HEADER];
+		//i is the number of chars printed
+		int i = sprintf(myHeader, "%d", msgLen);
+		
+		for ( ; i < HEADER; ++i){
+			myHeader[i] = '\t';
+		}	
+		snprintf(buff, sizeof(buff), "%s%s", myHeader, msg);
 		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
 			perror("write error");
 
