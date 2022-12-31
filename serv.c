@@ -1,112 +1,116 @@
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>		//strtol()
+#include <unistd.h>		//read()
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/socket.h>	//socket()
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <pthread.h>
+#include <pthread.h>	//threads
 
-#include "wrap.h"
+#include "h/utility.h"
 
-#define PORT 9600
-#define BUF_SIZE 128
-#define SERVER_BACKLOG 10
-
-void *handle_conn(void *arg) {
-	int conn_fd = *((int*) arg);
-
-	//READ
-	char buf[BUF_SIZE];
-	ssize_t n;
-	while (1) {
-		n = read(conn_fd, &buf, sizeof(buf)-1);
-		if (n < 0) {
-			fprintf(stderr, "Error while reading from connection [%d]\n", conn_fd);
-			return NULL;
-		}
-		if (n == 0) {
-			break;
-		}
-		buf[n] = '\0';
-
-		printf("Received [%d]: %s\n", conn_fd,  buf);
-	}
-
-	//WRITE	
-	//set buf as message (this is a hack, do it right when prototype works)
-	snprintf(buf, sizeof(buf), "msg rcvd");	
+int main(int argc, char *argv[]){
+	int					listenfd, connfd, n, recvLen;
+	struct sockaddr_in	servaddr;
+	char				recvline[MAXLINE+1], c_recvLen[HEADER], request[MAXLINE+1], buff[MAXLINE];
+	long int			l_recvLen;
 	
-	Write(conn_fd, buf, strlen(buf));
-
-	//CLOSE CONNECTION
-	printf("Closing connection [%d]\n",conn_fd);
-	int err = close(conn_fd);
-	if (err != 0) {
-		fprintf(stderr, "Error while closing connection [%d]\n", conn_fd);
-	}
-	return NULL;
-}
-
-int main(int argc, char *argv[]) {
 	//CREATE SOCKET
-	int server_fd = socket(PF_INET, SOCK_STREAM, 0);
-	if (server_fd < 0) {
-		fprintf(stderr, "Cannot create socket\n");
-		return 1;
-	}
+	listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	//SET sockaddr_in VALUES
-	struct sockaddr_in server_addr;
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(PORT);
-	int ok = inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
-	if (!ok) {
-		fprintf(stderr, "Cannot parse IP address\n");
-		return 1;
-	}
-	
+	if (listenfd < 0)
+		perror("socket error");
+
+
+	//SETSOCKOPT
+	if(setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+		perror("setsockopt error");
+
+	//SERVADDR VALUES
+	bzero(&servaddr, sizeof(servaddr));				//clear values
+	servaddr.sin_family      = AF_INET;				//af_inet is the Internet
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);	//convert ip to long
+	servaddr.sin_port        = htons(PORT);			//port 13 for Daytime Server
+
 	//BIND
-	int err = bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr));
-	if (err != 0) {
-		fprintf(stderr, "Cannot bind server\n");
-		return 1;
-	}
+	if(bind(listenfd, (SA *) &servaddr, sizeof(servaddr)) < 0)
+		perror("bind error");
 
 	//LISTEN
-	err = listen(server_fd, SERVER_BACKLOG);
-	if (err != 0) {
-		fprintf(stderr, "Cannot listen\n");
-		return 1;
-	}
+	if(listen(listenfd, LISTENQ) < 0)
+		perror("listen error");
 
-	printf("Server listening on port %d\n", PORT);
+	//INF LOOP 1
+	for(;;){
 
+		//ACCEPT
+		puts("waiting to accept() clients");
+		connfd = accept(listenfd, (SA*) NULL, NULL);
+		if (connfd < 0)
+			perror("accept error");
 
-	//ACCEPT
-	int client_fd;
-	struct sockaddr_in client_addr;
-	socklen_t client_addr_len;
-	pthread_t thread;
-	while (1) {
-		client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
-		if (client_fd < 0) {
-			fprintf(stderr, "Cannot accept\n");
-			return 1;
+		printf("accepted client\n");
+		//INF LOOP 2
+		for(;;){
+			//READ
+			if (readHeaderMsg(connfd, request) < 0){	//parse through header, then read msg body, saving it to request
+				fprintf(stderr, "header conversion error\n");
+				break;
+			}
+			/*			
+			//read just the header of the message
+			n = 0;
+			//only read until you have read all the bytes in the header
+			while(n < HEADER) {
+				//add the amount of bits read to n
+ 				n += read(connfd, c_recvLen, HEADER-n);
+				
+				char *ptr;
+				l_recvLen = strtol(c_recvLen, &ptr, 10);
+				recvLen = (int) l_recvLen;	//recvLen is the amount of bytes in the actual message
+			}
+			//read only recvLen bytes (which was sent to us in the header)
+			n = 0;
+			while(n < recvLen) {
+				//add the amount of bits read to n
+				n += read(connfd, recvline, recvLen-n);
+				
+				printf("n: [%d]\n", n);
+				recvline[n] = 0;	// null terminate
+				//print to console
+				/ *if (fputs(recvline, stdout) == EOF)
+					perror("fputs error");
+				* /
+				//print to char request[]
+				if(sprintf(request, "%s", recvline) < 0)	//using sprintf (not snprintf) creates a potential vulnerability.
+					perror("sprintf error");
+				
+			} */
+			printf("[CLIENT] \"%s\"\n", request);	//print the message
+	
+			//WRITE
+			char msg[] = "your message was recieved";
+			
+			//creates a header from msg. puts header and msg together onto buff
+			makeHeader(buff, msg);
+			
+			printf("[SERVER] \"%s\"\n", msg);
+
+			if(write(connfd, buff, strlen(buff)) != strlen(buff))
+				perror("write error");
+
+			//logic gate determines if we break the loop (leading to close()) or not
+			if(request == "q" || 0){
+				puts("break");
+				break;
+			}
+			
 		}
 
-		printf("New client [%d]\n", client_fd);
-		
-		handle_conn(&client_fd);
-
-		/*
-		//create new thread for each client (up to a limit i assume??)
-		err = pthread_create(&thread, NULL, &handle_conn, (void*) &client_fd);
-		if (err != 0) {
-			fprintf(stderr, "Cannot create thread to handle client connection\n");
-			return 1;
-		}
-		*/
+		//CLOSE
+		puts("close");
+		close(connfd);
 	}
 }

@@ -1,0 +1,33 @@
+Messages are all prepended with a fixed size header.
+
+	- Header is 4 bytes (4 characters).
+
+	- It will contain a base-10 number for how many bytes are in the body
+		of the actual message.
+
+	- The other computer will then read the header, then read exactly as many
+		bytes as is stated in the header, no more.
+
+	- If the number takes less than 4 bytes, pad the header with whitespace
+		(i like to use \t), but it doesn't really matter what you use probably.
+
+
+
+Note: current protocol won't be able to send more than a few thousand bytes per
+	transmission.
+
+
+
+We will operate on client-driven query-response system:
+
+	- In all connections, the client sends the first message.
+
+	- The server will interpret the message, and send a response.
+
+	- The server will not send unprompted messages.
+
+	- The server will send exactly 1 message response to each query made by
+		the client. In cases where the query isn't interpretable, the server
+		may send back an error response.
+	
+	- Both the client and server could close the connection based on context.
