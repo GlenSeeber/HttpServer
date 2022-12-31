@@ -55,9 +55,12 @@ int main(int argc, char *argv[]){
 		//INF LOOP 2
 		for(;;){
 			//READ
-			if (readHeaderMsg(connfd, request) < 0){	//parse through header, then read msg body, saving it to request
-				fprintf(stderr, "header conversion error\n");
-				break;
+			for (int i = 0, n = 0; ; ++i){
+				//read 1 char per loop
+				if( (n += Read(connfd, request, 1)) < 0){
+					break;
+				}
+				printf("%c", request[i]); 
 			}
 			/*			
 			//read just the header of the message

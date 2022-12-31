@@ -11,6 +11,29 @@
 #define LISTENQ	1024
 
 
+int Read(int fd, void *buf, size_t count){
+	int n;
+
+	if( (n = read(fd, buf, count)) == 0){
+		//we return an error (because we're out of bytes to read)
+		fprintf(stderr, "error: no bytes to read\n");
+		return -1;
+	}
+	//read() returns an error
+	else if (n < 0){
+		perror("read error");
+		return -1;
+	}
+	return n;
+}
+
+
+int Write(int fd, const void *buf, size_t count){
+	if(write(fd, buf, count) < 0)
+		perror("write error");
+}
+
+
 //--WRITE--
 void makeHeader(char *str, char msg[]){
 
@@ -44,7 +67,7 @@ int readHeaderMsg(int connfd, char request[]){
 	while(n < HEADER) {
 		//add the amount of bits read to n
 		if ( (n += read(connfd, c_recvLen, HEADER-n)) == 0){
-			fprintf(stderr, "error: no bytes to read");
+			fprintf(stderr, "error: no bytes to read\n");
 			return -1;
 		}
 		
@@ -57,7 +80,7 @@ int readHeaderMsg(int connfd, char request[]){
 	while(n < recvLen) {
 		//add the amount of bits read to n
 		if( (n += read(connfd, recvline, recvLen-n)) == 0){
-			fprintf(stderr, "error: no bytes to read");
+			fprintf(stderr, "error: no bytes to read\n");
 			return -1;
 		}	
 		
@@ -74,3 +97,4 @@ int readHeaderMsg(int connfd, char request[]){
 		return 0;
 	} 
 }
+
