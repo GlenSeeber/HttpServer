@@ -40,41 +40,50 @@ int main(int argc, char *argv[]){
 		perror("connect error");
 		return 1;
 	}
-
+	//loop for server connection
 	for(;;){
 		//WRITE
 		printf("[CLIENT] > ");
-		char msg[MAXLINE];
+		char msg[MAXLINE-1];
 		char c;
+
+		//empty the buff
+		memset(buff, 0, sizeof(buff));
+
 		//this just records stdin to msg[] until you hit enter
 		for(int i = 0; (c = getchar()) != '\n'; ++i){
 			msg[i] = c;
 		}
-		
-		//puts header then msg[] onto buff[]
-		makeHeader(buff, msg);
 
+		//print msg+'\n' onto the buff	
+		sprintf(buff, "%s\n", msg);
+	
+		printf("msg: %s\n", msg);
+		
 		//write to server
 		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
 			perror("write error");
 
 
-		//READ
-		//parse through header and read the message from server
-		readHeaderMsg(sockfd, reply);
+		//READ		
+		n = 0;
 
-		printf("[SERVER] > %s\n", reply);	//print the message
+		//empty the buff
+		memset(buff, 0, sizeof(buff));
+		
 
-		/*
-		while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
-			fputs("loop to read from server....\n", stdout);
-			recvline[n] = 0;	// null terminate
-			if (fputs(recvline, stdout) == EOF)
-				fputs("fputs error", stderr);
-		}*/	
+		//read bytes until we find '\n' or if we hit 50 total bytes.
+		do{
+			//buff+n so we don't overwrite previous reads.
+			n += Read(sockfd, buff+n, 1);
+		}while(buff[n-1] != '\n' && n < 50);
+		
+		printf("[SERVER] > %s\n", buff);	//print the message
+
+
 
 		//logicgate determine if break
-		if(0){
+		if(1){
 			break;
 		}
 	}

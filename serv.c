@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 	if(listen(listenfd, LISTENQ) < 0)
 		perror("listen error");
 
-	//INF LOOP 1
+	//Loop to ACCEPT clients
 	for(;;){
 
 		//ACCEPT
@@ -51,61 +51,40 @@ int main(int argc, char *argv[]){
 		if (connfd < 0)
 			perror("accept error");
 
-		printf("accepted client\n");
-		//INF LOOP 2
+		printf("*****\naccepted client\n");
+		//Loop to handle individual clients
 		for(;;){
 			//READ
-			for (int i = 0, n = 0; ; ++i){
-				//read 1 char per loop
-				if( (n += Read(connfd, request, 1)) < 0){
-					break;
-				}
-				printf("%c", request[i]); 
-			}
-			/*			
-			//read just the header of the message
 			n = 0;
-			//only read until you have read all the bytes in the header
-			while(n < HEADER) {
-				//add the amount of bits read to n
- 				n += read(connfd, c_recvLen, HEADER-n);
-				
-				char *ptr;
-				l_recvLen = strtol(c_recvLen, &ptr, 10);
-				recvLen = (int) l_recvLen;	//recvLen is the amount of bytes in the actual message
-			}
-			//read only recvLen bytes (which was sent to us in the header)
-			n = 0;
-			while(n < recvLen) {
-				//add the amount of bits read to n
-				n += read(connfd, recvline, recvLen-n);
-				
-				printf("n: [%d]\n", n);
-				recvline[n] = 0;	// null terminate
-				//print to console
-				/ *if (fputs(recvline, stdout) == EOF)
-					perror("fputs error");
-				* /
-				//print to char request[]
-				if(sprintf(request, "%s", recvline) < 0)	//using sprintf (not snprintf) creates a potential vulnerability.
-					perror("sprintf error");
-				
-			} */
-			printf("[CLIENT] \"%s\"\n", request);	//print the message
+		
+			//empty the buff
+			memset(buff, 0, sizeof(buff));
 	
+			//read bytes until we find '\n' or if we hit 50 total bytes.
+			do{
+				//buff+n so we don't overwrite previous reads.
+				n += Read(connfd, buff+n, 1);
+			}while(buff[n-1] != '\n' && n < 50);
+
+			//print what we got
+			printf("[CLIENT] \"%s\"\n", buff);
+			
 			//WRITE
 			char msg[] = "your message was recieved";
+		
+			//empty the buff
+			memset(buff, 0, sizeof(buff));
+	
+			//append \r\n to message
+			sprintf(buff, "%s\n", msg);
 			
-			//creates a header from msg. puts header and msg together onto buff
-			makeHeader(buff, msg);
-			
-			printf("[SERVER] \"%s\"\n", msg);
+			printf("[SERVER] > {%s}\n", buff);
 
 			if(write(connfd, buff, strlen(buff)) != strlen(buff))
 				perror("write error");
 
 			//logic gate determines if we break the loop (leading to close()) or not
-			if(request == "q" || 0){
+			if(request == "q" || 1){
 				puts("break");
 				break;
 			}
