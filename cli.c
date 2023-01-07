@@ -15,6 +15,8 @@ int main(int argc, char *argv[]){
 	char				reply[MAXLINE+1], recvline[MAXLINE + 1], buff[MAXLINE];
 	struct sockaddr_in	servaddr;
 
+	char				quit[] = "\r\n\r\n";
+
 	if (argc != 2)
 		fputs("usage: a.out <IPaddress>", stderr);
 
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]){
 	for(;;){
 		//WRITE
 		printf("[CLIENT] > ");
-		char msg[MAXLINE-1];
+		char msg[MAXLINE-sizeof(quit)];
 		char c;
 
 		//empty the buff
@@ -55,10 +57,10 @@ int main(int argc, char *argv[]){
 			msg[i] = c;
 		}
 
-		//print msg+'\n' onto the buff	
-		sprintf(buff, "%s\n", msg);
+		//print msg+quit onto the buff	
+		sprintf(buff, "%s%s", msg, quit);
 	
-		printf("msg: %s\n", msg);
+		printf("buff: {%s}\n", buff);
 		
 		//write to server
 		if(write(sockfd, buff, strlen(buff)) != strlen(buff))
