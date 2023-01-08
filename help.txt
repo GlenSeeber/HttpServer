@@ -1,0 +1,3 @@
+it stopped sending a reply because of something to do with the parsing and file writing shit I've been working on.
+
+Look through main() on serv.c, somewhere near where I call the parse() function idk.

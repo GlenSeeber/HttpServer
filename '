@@ -53,7 +53,7 @@ int fileToString(const char *filename, char buff[], int binary){
 	int		fd, n, err, output = 0;
 	FILE	*myfile;
 	
-	char	quit[3] = "\0", readMode[3] = "r";
+	char	quit[] = 0, readMode[3] = "r";
 
 	//"rb" for binary files, "r" for everything else	
 	if(binary){
