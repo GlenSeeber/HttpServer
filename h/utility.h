@@ -64,6 +64,41 @@ int Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
 	}
 }
 
+
+//(move this to h/utility.h when you finish implimenting)
+//saves 'size' bytes from the file designated at 'filename', saving them onto 'buff'. Reading in binary or not based on 'binary': 0 no, 1 yes.
+int fileToString1(const char *filename, long size, char *buff){
+	int		fd, n, err;
+	FILE	*myFile;
+	
+	char	quit[3] = "\0", readMode[3] = "rb";
+	
+	//get file from filename
+	myFile = fopen(filename, readMode);
+	
+	if (!myFile){
+		myFile = fopen("files/404.html", "r");	//debug make sure you fix this eventually
+	}
+	
+	n = 0;
+	//read bytes until we find or if we hit MAXLINE total bytes.
+	while(n <= size){
+		//read from fd
+		err = fRead(buff+n, 1, 1, myFile);
+		n += err;
+		if(err < 0){
+			break;
+		}
+	
+		//checks if you have the quit sequence at the end of ur buffer
+		if (n >= 1 && buff[n-1] == 0 && 0){	//this should not run, but i might change my mind on implimentation back into serv.c
+			break;
+		}
+	}
+	
+	return 0;
+}
+
 //takes an html file, reads through it until the closing </html> tag, and saves it to char buff[]
 int fileToString(const char *filename, char buff[], int binary){
 	int		fd, n, err, output = 0;
@@ -177,7 +212,8 @@ int substring(char search[], char keyword[], int lastIndex){
 	if (lastIndex+1 >= strlen(keyword)){
 		//iterate backwards through each char in search[] and keyword[]
 		for(int i = 0; i < strlen(keyword); ++i){
-//			printf("search: %d, %c \nkeyword: %lu, %c\n.\n", lastIndex-i, search[lastIndex-i], strlen(keyword)-(i+1), keyword[strlen(keyword)-(i+1)]);
+			printf("search: %d, %c \nkeyword: %lu, %c\n.\n", lastIndex-i, search[lastIndex-i], strlen(keyword)-(i+1), keyword[strlen(keyword)-(i+1)]);
+			printf("\ni:%d, strlen(keyword): %d\n", i, strlen(keyword));
 			//iterate backwards through each string to check if they're the same
 			if (search[lastIndex-(i)] != keyword[strlen(keyword)-(i+1)]){
 				return 0;	//if any char is wrong, they're different

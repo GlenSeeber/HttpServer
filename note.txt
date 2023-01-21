@@ -1,0 +1,6 @@
+I'm not sure what's wrong. We're getting a segmentation fault around ~line 113. I think it might be the substring function?? I messed with the function, might not have put it back to how it originally was, but I think that I did.
+
+Anyways, I think we're also dealing with race conditions that make life harder.
+
+
+The input I've been giving it: curl -d "user:myName&passcode:abc" -X POST localhost --http0.9

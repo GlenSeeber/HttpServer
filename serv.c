@@ -14,41 +14,6 @@
 //max size of a filename (not including its directory)
 #define MAXFILE 50
 
-//(move this to h/utility.h when you finish implimenting)
-//saves 'size' bytes from the file designated at 'filename', saving them onto 'buff'. Reading in binary or not based on 'binary': 0 no, 1 yes.
-int fileToString1(const char *filename, long size, char *buff){
-	int		fd, n, err;
-	FILE	*myFile;
-	
-	char	quit[3] = "\0", readMode[3] = "rb";
-	
-	//get file from filename
-	myFile = fopen(filename, readMode);
-	
-	if (!myFile){
-		myFile = fopen("files/404.html", "r");	//debug make sure you fix this eventually
-	}
-	
-	n = 0;
-	//read bytes until we find or if we hit MAXLINE total bytes.
-	while(n <= size){
-		//read from fd
-		err = fRead(buff+n, 1, 1, myFile);
-		n += err;
-		if(err < 0){
-			break;
-		}
-	
-		//checks if you have the quit sequence at the end of ur buffer
-		if (n >= 1 && buff[n-1] == 0 && 0){	//this should not run, but i might change my mind on implimentation back into serv.c
-			break;
-		}
-	}
-	
-	return 0;
-}
-
-
 int main(int argc, char *argv[]){
 	char 				quit[] = "\r\n\r\n", fileDir[] = "files";
 	
@@ -56,11 +21,10 @@ int main(int argc, char *argv[]){
 	int		binaryCount 	= 3;
 	
 
-	int					listenfd, connfd, n, recvLen, request;
+	int					listenfd, connfd, recvLen, request;
 	struct sockaddr_in	servaddr, client_addr;
 	//SA					client_addr;
-	char				recvline[MAXLINE+1], c_recvLen[HEADER];
-//	char				msg[MAXLINE-strlen(quit)], buff[MAXLINE];
+	char				recvline[MAXLINE+1], c_recvLen[HEADER], target[MAXFILE+1];
 	long int			l_recvLen;
 
 	
@@ -107,55 +71,88 @@ int main(int argc, char *argv[]){
 		//Loop to handle individual clients
 		for(;;){
 			//READ
+			int 	status = -1, method = -1;
+			unsigned long contentLength = 0, n;
+			char 	filename[MAXFILE+1+sizeof(fileDir)], version[5];
+
+			char methodList[9][8] = {"GET", "HEAD", "POST", "OPTIONS", "PUT", "DELETE", "CONNECT", "TRACE", "PATCH"};
+			
 
 			//setup the buffer	
 			char *buff = malloc(MAXLINE);	//change to whatever the chunk-size of the http request is eventually or something idk
 			memset(buff, 0, MAXLINE);
 
 			n = 0;
+			unsigned long maxBytes = MAXLINE;
 			//read bytes until we find "\r\n\r\n" or if we hit MAXLINE total bytes.
-			while(n <= MAXLINE){
+			while(n <= maxBytes){
+				printf("%d, ", n);
 				//read from fd
  				int err = Read(connfd, &buff[n], 1);
 				n += err;
 				if(err < 0){
 					break;
 				}
-			
-				//checks if you have the quit sequence at the end of ur buffer
-				if (n >= 4 && substring(buff, quit, n-1)){
+				
+				//if we come across a quit sequence after already adding the contentLength (ie we're in the body), go ahead and actually quit.
+				else if (contentLength > 0 && substring(buff, quit, n-1)){
 					break;
 				}
-	
+
+				//this runs when we've read all of the header + the closing "\r\n\r\n" (or hit MAXLINE bytes).
+				else if (contentLength == 0 && (n >= 4 && substring(buff, quit, n-1) || n == MAXLINE)){
+					printf("we've hit the body\n");
+					printf("[BUFF]%s[END-BUFF]\n\n", buff);
+					//iterate through each char in the request (buff)
+					for (int i = 18; i < MAXLINE; ++i){
+						//check for "Content-length: " at each iteration
+						printf("\ni:%d, n:%d\n", i, n);
+						printf("\n\nbuff[i, i+1]: %c, %c\n", buff[i], buff[i+1]);
+
+						char keyword[] = "Content-Length: ";
+						if(substring(buff, keyword, i) == 1){
+							printf("we found 'Content-Length: '");
+							char *endptr;
+							//grab the number as a long with strtol()
+							contentLength = strtol(buff[i], endptr, 10);
+							//update maxBytes to include the amount of bytes in the body now
+							maxBytes += contentLength;
+							printf("cont. Len.: %lu\n", contentLength);
+							break;
+						}
+					}
+					
+					
+					//figure out the request Method (9 is how many methods there are)
+					for (int i = 0; i < 9; ++i){
+						if (substring(buff, methodList[i], strlen(methodList[i])-1)){
+							method = i;
+							printf("method: %d\n", method);
+							break;
+						}
+					}
+					
+					//parse the header (stored on buff)
+					memset(target, 0, sizeof(target));
+					memset(version, 0, sizeof(version));
+					
+					if (parse(buff, target, sizeof(target), version, sizeof(version)) < 0){
+						fprintf(stderr, "parsing error\n");
+					}
+					
+					//if the contentLength proves we don't have a body, no need to call Read() again.
+					if(contentLength <= 0){
+						break;
+					}
+				}
 			}
-		
+				
 			//print what we got
 			printf("[CLIENT]: \n\n%s[CLIENT-END]\n\n", buff);
-	
+			printf("pointer: [%p]", buff);
+			
 			//PROCESS REQUEST
-			int 	status = -1, method = -1;
-			
-			char 	target[MAXFILE+1], filename[MAXFILE+1+sizeof(fileDir)], version[5];
-	
 
-			//request method
-			char methodList[9][8] = {"GET", "HEAD", "POST", "OPTIONS", "PUT", "DELETE", "CONNECT", "TRACE", "PATCH"};
-			for (int i = 0; i < 9; ++i){
-				if (substring(buff, methodList[i], strlen(methodList[i])-1 )){
-					method = i;
-					break;
-				}
-			}
-			
-			//target request and http version
-			memset(target, 0, sizeof(target));
-			memset(version, 0, sizeof(version));
-			
-			if (parse(buff, target, sizeof(target), version, sizeof(version)) < 0){
-				fprintf(stderr, "parsing error\n");
-			}
-			
-			
 			//if you're resource is "/", make it "/index.html"
 			if (strcmp(target, "/") == 0){
 				memset(target, 0, sizeof(target));
@@ -185,15 +182,16 @@ int main(int argc, char *argv[]){
 			if (status >= 400){
 				memset(target, 0, sizeof(target));
 				sprintf(target, "/%d.html", status);
-				fprintf(stderr, "status code %d", status);
+				fprintf(stderr, "status code %d\n", status);
 			}
 			
 			//int binary = 0;
-			free(buff);
+//			free(buff);
 			long fileSize = 0;
 			char writeMode[4] = "w";
 			//no errors, proceed to respond regularly
 			switch(method){
+				//GET
 				case 0:
 					//put filepath+name on filename
 					sprintf(filename, "%s%s", fileDir, target);
@@ -242,9 +240,15 @@ int main(int argc, char *argv[]){
 
 					printf(BLU "sending %s to client\n\n" RESET, target);
 					break;
+				//HEAD
 				case 1:
 					printf("HEAD. Don't know what to do about it");
 					break;
+				//POST
+				case 2:
+					break;
+					
+
 			}
 			
 			//WRITE
