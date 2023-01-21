@@ -2,6 +2,11 @@ body{
     background-color: rgb(225, 149, 51);
 }
 
+.body{
+	width: 80%;
+	align: center;
+}
+
 h1{
     color: black;
 }
@@ -11,5 +16,22 @@ h3{
 }
 
 p{
-    color: #29014d;
+    color: black;
+}
+
+li{
+	padding-bottom: 10px;
+}
+
+.header {
+  padding: 60px;
+  text-align: center;
+  background: #fdc276;
+  color: #000;
+  font-size: 20px;
+}
+
+.item {
+  width: 20%;
+  display: inline-block;
 }

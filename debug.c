@@ -1,82 +1,99 @@
 #include <stdio.h>
-
 #include "h/utility.h"
 
-#define MAXFILE 50	//how many characters can be contained in a file path
 
+int fRead(void *ptr, size_t size, size_t nmemb, FILE *stream){
+	int n;
 
-//you need to wipe all allocated memory for the output vars using memset before calling this function
-int parseResource(const char request[], char target[], int targetSize, char version[], int versionSize){
-	//get the start and end of key bits of information (request target, http version, etc)
-	// and output the actual info in seperate variables.	
-
-	printf("request:\n%s\n", request);
-
-	//REQUEST TARGET (usually a page or file)
-	const char *targetStart	= strchr(request, ' ');
-	//adding *NULL + 1 creates a pointer somewhere we shouldn't be writing
-	if (targetStart == NULL){
-		fprintf(stderr, "error: targetStart should not be null");
-		return -1;
-	}	
-	targetStart += 1;
-	const char *targetEnd	= strchr(targetStart, ' ');
-	int targetLen			= targetEnd - targetStart;	
-
-
-	//HTTP VERSION
-	const char *verStart	= strchr(targetEnd, '/') + 1;
-	//prevent *NULL + 1
-	if (verStart == NULL){
-		fprintf(stderr, "error: verStart should not be null");
+	if( (n = fread(ptr, size, nmemb, stream)) == 0){
+		//we return an error (because we're out of bytes to read)
+		fprintf(stderr, "error: no bytes to fread\n");
 		return -1;
 	}
-	verStart += 1;
-	const char *verEnd		= strchr(verStart, '\r');
-	int verLen				= verEnd - verStart;
-
-
-
-	//copy values onto strings (checking to prevent overflow)
-	//request target
-	if(targetSize <= targetLen){
-		fprintf(stderr, "sizeof(target) error\n");
-		printf("target: '%d'\ntargetLen: %d\n", sizeof(target), targetLen);
+	//read() returns an error
+	else if (n < 0){
+		perror("fread error");
 		return -1;
 	}
-	strncpy(target, targetStart, targetLen);
-
-	//http version
-	if (versionSize <= verLen){
-		fprintf(stderr, "sizeof(version) error\n");
-		return -1;	
-	}
-	strncpy(version, verStart, verLen);			//http version
-		
-	return 0;
+	return n;
 }
+
+//saves 'size' bytes from the file designated at 'filename', saving them onto 'buff'. Reading in binary or not based on 'binary': 0 no, 1 yes.
+int fileToString1(const char *filename, long size, char *buff){
+	int		fd, n, err;
+	FILE	*myFile;
+	
+	char	quit[3] = "\0", readMode[3] = "rb";
+	
+	//get file from filename
+	myFile = fopen(filename, readMode);
+	
+	if (!myFile){
+		myFile = fopen("files/404.html", "r");	//debug make sure you fix this eventually
+	}
+	
+	n = 0;
+	//read bytes until we find or if we hit MAXLINE total bytes.
+	while(n <= size){
+		//read from fd
+		err = fRead(buff+n, 1, 1, myFile);
+		printf("%d, ", buff[n]);
+		n += err;
+		if(err < 0){
+			break;
+		}
+	
+		//checks if you have the quit sequence at the end of ur buffer
+		if (n >= 1 && buff[n-1] == 0 && 0){	//this should not run, but i might change my mind on implimentation back into serv.c
+			break;
+		}
+	}
+	
+	return 0;
+
+}
+
 
 int main(){
-	char request[] = "GET /index.html HTTP/1.1\r\nHost: 192.168.1.45\r\n\r\n";
-	char target[MAXFILE+1];
-	char version[5];
 
-	//empty our strings
-	memset(target, 0, sizeof(target));
-	memset(version, 0, sizeof(version));
+	char file[] = "files/favicon.ico";
+	FILE *outputFile;
+	
+	//open file[] so we can get its size
+	FILE *myFile = fopen(file, "rb");
+	//get size of myFile
+	fseek(myFile, 0L, SEEK_END);
+	long fileSize = ftell(myFile);
+	rewind(myFile);
+	//close file
+	fclose(myFile);
 
-	printf("target size: %d\n", sizeof(target));
+	//allocate enough room on the buff to hold the entire file
+	char *buff = malloc(fileSize);
 
-	//parse
-	if(parseResource(request, target, sizeof(target), version, sizeof(version)) < 0){
-		perror("parse error");
+	//put the file on the buff
+	memset(buff, 0, fileSize);
+	fileToString1(file, fileSize, buff);
+
+//	printf("[MSG]:\n%s[ENDMSG]", buff);
+
+
+	printf("[MSG]:\n");	
+	//print message as string
+	for (int i = 0; i < fileSize; ++i){
+		printf("%c", buff[i]);
+		
+		if (buff[i] == 0){
+			break;
+		}
 	}
+	printf("[END-MSG]\n");
+	
+	outputFile = fopen("files/favicon2.ico", "wb+");
+	fwrite(buff, 1, fileSize, outputFile);
+	fclose(outputFile);
 
-	//output
-	printf("filename: '%s'\n", target);
-	printf("HTTP/%s\n", version);
-
-
+	free(buff);
+	
+	return 0;
 }
-
-

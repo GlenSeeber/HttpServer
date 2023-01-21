@@ -42,6 +42,22 @@ int Write(int fd, const void *buf, size_t count){
 		perror("write error");
 }
 
+int fRead(void *ptr, size_t size, size_t nmemb, FILE *stream){
+	int n;
+
+	if( (n = fread(ptr, size, nmemb, stream)) == 0){
+		//we return an error (because we're out of bytes to read)
+		fprintf(stderr, "error: no bytes to fread\n");
+		return -1;
+	}
+	//read() returns an error
+	else if (n < 0){
+		perror("fread error");
+		return -1;
+	}
+	return n;
+}
+
 int Fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
 	if(fwrite(ptr, size, nmemb, stream) == 0){
 		perror("fwrite error");
@@ -57,7 +73,7 @@ int fileToString(const char *filename, char buff[], int binary){
 
 	//"rb" for binary files, "r" for everything else	
 	if(binary){
-		sprintf(readMode, "r");
+		sprintf(readMode, "rb");
 	}
 
 	//get file from filename
@@ -77,7 +93,7 @@ int fileToString(const char *filename, char buff[], int binary){
 	//empty the buff
 	memset(buff, 0, sizeof(buff));
 
-	//read bytes until we find "</html>" or if we hit MAXLINE total bytes.
+	//read bytes until we find or if we hit MAXLINE total bytes.
 	while(n <= MAXLINE){
 		//read from fd
 		err = Read(fd, buff+n, 1);
@@ -89,6 +105,9 @@ int fileToString(const char *filename, char buff[], int binary){
 		//checks if you have the quit sequence at the end of ur buffer
 		if (n >= strlen(quit) && substring(buff, quit, n-1)){
 			break;
+		}
+		if (n >= MAXLINE){	
+			break;		//eventually, you should just make it send this out and then clear buff and print to this again or something idk
 		}
 	}
 	
@@ -131,8 +150,8 @@ int parse(const char request[], char target[], int targetSize, char version[], i
 	//copy values onto strings (checking to prevent overflow)
 	//request target
 	if(targetSize <= targetLen){
-		fprintf(stderr, "sizeof(target) error\n");
-		fprintf(stderr, "target: '%lu'\ntargetLen: %d\n", sizeof(target), targetLen);
+		fprintf(stderr, "overflow error of 'target' variable\n");
+		fprintf(stderr, "target: %d\ntargetLen: %d\n", targetSize, targetLen);
 		return -1;
 	}
 	strncpy(target, targetStart, targetLen);
@@ -140,7 +159,7 @@ int parse(const char request[], char target[], int targetSize, char version[], i
 	//http version
 	if (versionSize <= verLen){
 		fprintf(stderr, "sizeof(version) error\n");
-		return -1;	
+		return -1;
 	}
 	strncpy(version, verStart, verLen);			//http version
 		
