@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="default.css">
+    <title>River's Website</title>
+</head>
+<body>
+	<div class="header">
+		<div class = "item">
+			<h2><a href="/index.html">Home</a></h2>
+		</div>
+		<div class = "item">
+			<h2><a href="/about.html">About</a></h2>
+		</div>
+		<div class = "item">
+			<h2><a href="/downloads.html">Downloads</a></h2>
+		</div>
+	</div>
+	<br><br>
+	<h1 class="body">Forms</h1>
+    <h3 class="body">Login Form (don't actually put sensetive data in here, nothing is getting encrypted and you probably will get hacked)</h3>
+	<form action="/logs.JSON" method="post">
+		<label for="uname">Username:</label><br>
+		<input type="text" id="uname" name="username" value=""><br><br>
+		<label for="pass">Password: (i absolutely commend you not to put a real password in this field)</label><br>
+		<input type="text" id="pass" name="password" value=""><br><br>
+		<input type="submit" value="Submit">
+	</form>
+</body>
+</html>
+
