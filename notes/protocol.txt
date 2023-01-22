@@ -1,22 +1,18 @@
-The protocol is the Hyper-Text Transfer Protocol (HTTP)
+This is an HTTP server. The protocol for this server lies within the bounds of the HTTP Protocol.
 
+The server accepts GET and POST currently.
 
+For all requests:
 
-This server will accept 2 requests: POST and GET.
+	- Header of no more than 4096 bytes.
+	- Must end in "\r\n\r\n" (as is already required by http)
 
+GET:
+	
+	- Only the header of the request will be read.
+	- Server response will lack a header
 
+POST:
 
-Basic concepts:
-
-	- HTTP is stateless.
-
-	- Query-based protocol, driven by the client posting requests.
-
-
-Our server:
-
-	- We will be serving html and css. After the prototype, we might upgrade to
-		including javascript that talks to the server.
-
-	- It's mostly just to prove that I can do backend, so don't worry too much
-		about making it pretty to look at.
+	- Must include "Content-Length: [n]" (case sensitive)
+	- Server will respond with 200 OK if it has recieved the payload.

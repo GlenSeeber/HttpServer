@@ -206,14 +206,14 @@ int substring(char search[], char keyword[], int lastIndex){
 
 //	printf("search: %s\nkeyword: %s\n\n", search, keyword);
 	
-//	printf("lastIndex: %d\nstrlen(keyword): %ld\n", lastIndex, strlen(keyword));
+//	printf("lastIndex: %d\n", lastIndex);
 	
 	//prevents an array error
 	if (lastIndex+1 >= strlen(keyword)){
 		//iterate backwards through each char in search[] and keyword[]
 		for(int i = 0; i < strlen(keyword); ++i){
-			printf("search: %d, %c \nkeyword: %lu, %c\n.\n", lastIndex-i, search[lastIndex-i], strlen(keyword)-(i+1), keyword[strlen(keyword)-(i+1)]);
-			printf("\ni:%d, strlen(keyword): %d\n", i, strlen(keyword));
+//			printf("\ni:%d, strlen(keyword): %d\n", i, strlen(keyword));
+//			printf("search: %d, %c \nkeyword: %lu, %c\n.\n", lastIndex-i, search[lastIndex-i], strlen(keyword)-(i+1), keyword[strlen(keyword)-(i+1)]);
 			//iterate backwards through each string to check if they're the same
 			if (search[lastIndex-(i)] != keyword[strlen(keyword)-(i+1)]){
 				return 0;	//if any char is wrong, they're different

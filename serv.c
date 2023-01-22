@@ -8,6 +8,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <pthread.h>	//threads
+#include <assert.h>		//debugging
+
 
 #include "h/utility.h"
 
@@ -72,7 +74,8 @@ int main(int argc, char *argv[]){
 		for(;;){
 			//READ
 			int 	status = -1, method = -1;
-			unsigned long contentLength = 0, n;
+			long contentLength = 0;
+			unsigned long n;
 			char 	filename[MAXFILE+1+sizeof(fileDir)], version[5];
 
 			char methodList[9][8] = {"GET", "HEAD", "POST", "OPTIONS", "PUT", "DELETE", "CONNECT", "TRACE", "PATCH"};
@@ -86,14 +89,15 @@ int main(int argc, char *argv[]){
 			unsigned long maxBytes = MAXLINE;
 			//read bytes until we find "\r\n\r\n" or if we hit MAXLINE total bytes.
 			while(n <= maxBytes){
-				printf("%d, ", n);
+		//		printf("%d, ", n);
 				//read from fd
  				int err = Read(connfd, &buff[n], 1);
 				n += err;
+			//	printf("%c", buff[n-1]);	
+				fflush(stdout);
 				if(err < 0){
 					break;
 				}
-				
 				//if we come across a quit sequence after already adding the contentLength (ie we're in the body), go ahead and actually quit.
 				else if (contentLength > 0 && substring(buff, quit, n-1)){
 					break;
@@ -101,23 +105,22 @@ int main(int argc, char *argv[]){
 
 				//this runs when we've read all of the header + the closing "\r\n\r\n" (or hit MAXLINE bytes).
 				else if (contentLength == 0 && (n >= 4 && substring(buff, quit, n-1) || n == MAXLINE)){
-					printf("we've hit the body\n");
-					printf("[BUFF]%s[END-BUFF]\n\n", buff);
 					//iterate through each char in the request (buff)
 					for (int i = 18; i < MAXLINE; ++i){
 						//check for "Content-length: " at each iteration
-						printf("\ni:%d, n:%d\n", i, n);
-						printf("\n\nbuff[i, i+1]: %c, %c\n", buff[i], buff[i+1]);
-
 						char keyword[] = "Content-Length: ";
+						
 						if(substring(buff, keyword, i) == 1){
-							printf("we found 'Content-Length: '");
-							char *endptr;
+							
+			//				printf("we found 'Content-Length: ' with last index = %d\n", i);
+			//				printf("buff[86,87,88]: '%c%c%c'\n", buff[86], buff[87], buff[88]);
+							
+							char *endptr = NULL;
 							//grab the number as a long with strtol()
-							contentLength = strtol(buff[i], endptr, 10);
-							//update maxBytes to include the amount of bytes in the body now
-							maxBytes += contentLength;
+							contentLength = strtol(buff+i, &endptr, 10);
 							printf("cont. Len.: %lu\n", contentLength);
+							//update maxBytes to include the amount of bytes in the body now
+							maxBytes = n + contentLength-1;
 							break;
 						}
 					}
@@ -149,7 +152,6 @@ int main(int argc, char *argv[]){
 				
 			//print what we got
 			printf("[CLIENT]: \n\n%s[CLIENT-END]\n\n", buff);
-			printf("pointer: [%p]", buff);
 			
 			//PROCESS REQUEST
 
