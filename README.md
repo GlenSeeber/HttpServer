@@ -1,6 +1,6 @@
 # HTTP Server
 
-The main point of this project is that it's a personal study into backend. As a result, the frontend isn't very pretty, but it is functional for what is intended to do (not much currently, but hopefully that's changing soon).
+The main point of this project is that it's a personal study into backend. As a result, the frontend isn't very pretty, but it is functional for what is intended to do.
 
 ## Current Functionality:
   - Accepts basic `GET` requests and will serve static page responses if the file exists. Otherwise, it sends back a 404 page.
@@ -11,8 +11,3 @@ The main point of this project is that it's a personal study into backend. As a 
   - Working on features to read and respond to `POST` requests in branch `post`.
   
   - Threads are not used currently, and no network timeouts have been programmed in yet. That's high on the priority list after finishing POST functionality.
-
-## What's next:
-
-  - I need to make a decision about what I actually want the server to do. I don't know if I want to make a blog, or a forum, or a file saving service, or what.
-    - Once I do that I can hone in on specific features to add, and what I know I don't need.
